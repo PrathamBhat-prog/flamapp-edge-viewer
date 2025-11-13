@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.Surface
 import android.view.TextureView
+import android.widget.Button
+import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -26,12 +28,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // JNI function from C++
+    // JNI functions
     external fun stringFromJNI(): String
     external fun processFrame(bytes: ByteArray, width: Int, height: Int): ByteArray
 
     private val CAMERA_REQUEST_CODE = 100
     private lateinit var textureView: TextureView
+    private lateinit var processedView: ImageView
+    private lateinit var captureButton: Button
     private lateinit var cameraManager: CameraManager
     private var cameraDevice: CameraDevice? = null
     private var previewSession: CameraCaptureSession? = null
@@ -46,8 +50,10 @@ class MainActivity : AppCompatActivity() {
         val nativeMessage = stringFromJNI()
         Log.i("JNI_TEST", "Native says: $nativeMessage")
 
-        // Setup TextureView
+        // Initialize views
         textureView = findViewById(R.id.textureView)
+        processedView = findViewById(R.id.processedView)
+        captureButton = findViewById(R.id.captureButton)
 
         // Setup camera manager
         cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
@@ -55,53 +61,48 @@ class MainActivity : AppCompatActivity() {
 
         // Ask for camera permission
         checkCameraPermission()
+
+        // Set up the button's onClick listener
+        captureButton.setOnClickListener {
+            val capturedBitmap = captureFrame()
+            if (capturedBitmap != null) {
+                val byteArray = bitmapToByteArray(capturedBitmap)
+                if (byteArray != null) {
+                    val processedBytes = processFrame(byteArray, capturedBitmap.width, capturedBitmap.height)
+                    val processedBitmap = byteArrayToBitmap(processedBytes, capturedBitmap.width, capturedBitmap.height)
+                    if (processedBitmap != null) {
+                        showProcessedFrame(processedBitmap)
+                    }
+                }
+            }
+        }
     }
 
     private val textureListener = object : TextureView.SurfaceTextureListener {
         override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
             startCamera()
         }
+
         override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {}
+
         override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean = true
-        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-            val bitmap = getBitmapFromTextureView()
-            if (bitmap != null) {
-                val byteArray = bitmapToByteArray(bitmap)
-                if (byteArray != null) {
-                    val processedBytes = processFrame(byteArray, bitmap.width, bitmap.height)
-                    // The processedBytes are now ready to be used
-                }
-            }
-        }
+
+        // We no longer do real-time processing here
+        override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {}
     }
 
     private fun checkCameraPermission() {
         val permission = Manifest.permission.CAMERA
-
-        if (ContextCompat.checkSelfPermission(this, permission)
-            != PackageManager.PERMISSION_GRANTED) {
-
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(permission),
-                CAMERA_REQUEST_CODE
-            )
+        if (ContextCompat.checkSelfPermission(this, permission) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(permission), CAMERA_REQUEST_CODE)
         } else {
             startCamera()
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray) {
-
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-
-        if (requestCode == CAMERA_REQUEST_CODE &&
-            grantResults.isNotEmpty() &&
-            grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
+        if (requestCode == CAMERA_REQUEST_CODE && grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             startCamera()
         }
     }
@@ -109,12 +110,8 @@ class MainActivity : AppCompatActivity() {
     private fun startCamera() {
         try {
             val cameraId = cameraManager.cameraIdList[0]
-
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
-                != PackageManager.PERMISSION_GRANTED) return
-
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
             cameraManager.openCamera(cameraId, stateCallback, null)
-
         } catch (e: Exception) {
             Log.e("Camera", "Error starting camera: ${e.message}")
         }
@@ -142,32 +139,24 @@ class MainActivity : AppCompatActivity() {
             surfaceTexture.setDefaultBufferSize(textureView.width, textureView.height)
             val surface = Surface(surfaceTexture)
 
-            previewRequestBuilder =
-                cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+            previewRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             previewRequestBuilder.addTarget(surface)
 
-            cameraDevice!!.createCaptureSession(
-                listOf(surface),
-                object : CameraCaptureSession.StateCallback() {
-                    override fun onConfigured(session: CameraCaptureSession) {
-                        previewSession = session
-                        previewRequestBuilder.set(
-                            CaptureRequest.CONTROL_MODE,
-                            CameraMetadata.CONTROL_MODE_AUTO
-                        )
-                        session.setRepeatingRequest(previewRequestBuilder.build(), null, null)
-                    }
+            cameraDevice!!.createCaptureSession(listOf(surface), object : CameraCaptureSession.StateCallback() {
+                override fun onConfigured(session: CameraCaptureSession) {
+                    previewSession = session
+                    previewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO)
+                    session.setRepeatingRequest(previewRequestBuilder.build(), null, null)
+                }
 
-                    override fun onConfigureFailed(session: CameraCaptureSession) {}
-                },
-                null
-            )
+                override fun onConfigureFailed(session: CameraCaptureSession) {}
+            }, null)
         } catch (e: Exception) {
             Log.e("Camera", "Preview error: ${e.message}")
         }
     }
 
-    fun getBitmapFromTextureView(): Bitmap? {
+    fun captureFrame(): Bitmap? {
         if (!textureView.isAvailable) {
             return null
         }
@@ -179,9 +168,21 @@ class MainActivity : AppCompatActivity() {
             Log.e("JNI_ERROR", "Bitmap format is not ARGB_8888")
             return null
         }
-
         val byteBuffer = ByteBuffer.allocate(bitmap.byteCount)
         bitmap.copyPixelsToBuffer(byteBuffer)
         return byteBuffer.array()
+    }
+
+    fun byteArrayToBitmap(bytes: ByteArray, width: Int, height: Int): Bitmap? {
+        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val byteBuffer = ByteBuffer.wrap(bytes)
+        bitmap.copyPixelsFromBuffer(byteBuffer)
+        return bitmap
+    }
+
+    fun showProcessedFrame(bitmap: Bitmap) {
+        runOnUiThread {
+            processedView.setImageBitmap(bitmap)
+        }
     }
 }

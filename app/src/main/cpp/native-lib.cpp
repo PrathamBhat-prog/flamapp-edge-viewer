@@ -27,41 +27,42 @@ Java_com_example_edgeviewer_MainActivity_processFrame(
         jint width,
         jint height) {
 
-    // 1. Get a pointer to the raw pixel data from the jbyteArray.
     jbyte *input_bytes = env->GetByteArrayElements(input, NULL);
     if (input_bytes == NULL) {
         LOGI("Error getting byte array elements");
         return NULL;
     }
 
-    // 2. Create a cv::Mat that wraps the input data (no copy).
-    // The format CV_8UC4 corresponds to ARGB_8888.
-    cv::Mat frame(height, width, CV_8UC4, (unsigned char *)input_bytes);
+    cv::Mat inputMat(height, width, CV_8UC4, (unsigned char *)input_bytes);
 
-    // 3. Duplicate the Mat to have a separate, modifiable copy.
-    cv::Mat img = frame.clone();
+    // 1. Convert the input image to grayscale
+    cv::Mat grayMat;
+    cv::cvtColor(inputMat, grayMat, cv::COLOR_RGBA2GRAY);
 
-    // 4. IMPORTANT: Release the JNI byte array elements to avoid memory leaks.
+    // 2. Apply Canny edge detection
+    cv::Mat edgesMat;
+    cv::Canny(grayMat, edgesMat, 50, 150);
+
+    // 3. Convert the single-channel edges back to a 4-channel image
+    cv::Mat rgbaMat;
+    cv::cvtColor(edgesMat, rgbaMat, cv::COLOR_GRAY2RGBA);
+
+    // 4. *** CRITICAL STEP FOR ANDROID BITMAP ***
+    //    Convert the RGBA image to ARGB, which is the format Android's Bitmap expects.
+    cv::Mat argbMat;
+    cv::cvtColor(rgbaMat, argbMat, cv::COLOR_RGBA2BGRA); // BGRA is ARGB in memory layout
+
     env->ReleaseByteArrayElements(input, input_bytes, 0);
 
-    // 5. Convert the processed cv::Mat (img) back to a jbyteArray.
-
-    // Get the total number of bytes in the Mat.
-    jsize output_size = img.total() * img.elemSize();
-
-    // Create a new jbyteArray to hold the output pixels.
+    // 5. Copy the final ARGB pixel data to a new jbyteArray to return to Kotlin
+    jsize output_size = argbMat.total() * argbMat.elemSize();
     jbyteArray output = env->NewByteArray(output_size);
     if (output == NULL) {
         LOGI("Error creating new byte array");
         return NULL;
     }
 
-    // Get a pointer to the raw data of the Mat.
-    unsigned char *output_bytes = img.data;
+    env->SetByteArrayRegion(output, 0, output_size, (jbyte *)argbMat.data);
 
-    // Copy the pixel data from the Mat to the new jbyteArray.
-    env->SetByteArrayRegion(output, 0, output_size, (jbyte *)output_bytes);
-
-    // 6. Return the new jbyteArray to Kotlin.
     return output;
 }

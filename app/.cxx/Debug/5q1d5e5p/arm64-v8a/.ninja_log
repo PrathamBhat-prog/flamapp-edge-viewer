@@ -1,3 +1,7 @@
 # ninja log v5
 7	1322	7847735661722443	CMakeFiles/native-lib.dir/native-lib.cpp.o	bf0af9bed3bd1a8f
 6	127	7847737443930714	C:/Users/GHOST PROTOCOL/Documents/flamapp-edge-viewer/app/build/intermediates/cxx/Debug/5q1d5e5p/obj/arm64-v8a/libnative-lib.so	e37333940aeee48a
+31	5386	7847743818132236	CMakeFiles/native-lib.dir/native-lib.cpp.o	bf0af9bed3bd1a8f
+5388	5788	7847743822203418	C:/Users/GHOST PROTOCOL/Documents/flamapp-edge-viewer/app/build/intermediates/cxx/Debug/5q1d5e5p/obj/arm64-v8a/libnative-lib.so	e37333940aeee48a
+10	1968	7847755674916646	CMakeFiles/native-lib.dir/native-lib.cpp.o	bf0af9bed3bd1a8f
+1969	2109	7847755676378299	C:/Users/GHOST PROTOCOL/Documents/flamapp-edge-viewer/app/build/intermediates/cxx/Debug/5q1d5e5p/obj/arm64-v8a/libnative-lib.so	e37333940aeee48a
