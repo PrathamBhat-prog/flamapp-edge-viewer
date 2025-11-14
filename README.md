@@ -1,130 +1,50 @@
-Edge Viewer App (Android + OpenCV + JNI)
+# Edge Viewer App (Android + OpenCV + JNI)
 
-A lightweight Android application that captures an image from the camera and generates an edge-detected version of the image using OpenCV (C++), JNI, and the Camera2 API.
-This project demonstrates native image processing on Android and a complete pipeline from camera frame → bitmap → JNI → OpenCV → processed output.
+A lightweight Android application that captures an image from the camera and generates an **edge-detected version** using **OpenCV (C++)**, **JNI**, and the **Camera2 API**.
 
-Features
+This project demonstrates a complete end-to-end flow:
+Camera frame → Bitmap → ByteArray → JNI → OpenCV native processing → Processed output rendering.
 
-• Live Camera Preview
-Full-screen camera feed using TextureView.
+---
 
-• Capture Image
-Captures a frame from the TextureView and converts it into a Bitmap.
+## 📌 Features
 
-• Native Edge Detection (OpenCV + C++)
-Processing done entirely in the native layer using OpenCV (Canny / Sobel).
+### ✔ Live Camera Preview  
+Full-screen real-time camera feed using `TextureView`.
 
-• Display Processed Image
-The processed result is shown in an ImageView.
+### ✔ Capture Image  
+Captures the current frame and converts it into a Bitmap.
 
-• Retake Function
-User can return to live camera preview after viewing the output.
+### ✔ Native Edge Detection (C++ + OpenCV)  
+The captured Bitmap is processed inside a native C++ layer using:
+- OpenCV image processing  
+- Sobel / Canny edge detection  
+- RGBA → Grayscale → Edges → RGBA pipeline
 
-Tech Stack
+### ✔ Processed Image Display  
+Edge-detected output is shown in an ImageView.
 
-Android:
+### ✔ Retake Function  
+Allows returning to live camera mode and capturing again.
 
-Kotlin
+---
 
-Camera2 API
+## 🛠 Tech Stack
 
-TextureView
+### **Android**
+- Kotlin  
+- Camera2 API  
+- TextureView  
+- ConstraintLayout  
 
-Native Layer:
+### **Native Layer**
+- C++  
+- OpenCV Android SDK  
+- JNI (Java Native Interface)  
+- CMake  
 
-C++
+### **Build Tools**
+- Gradle  
+- Android Studio  
 
-OpenCV Android SDK
-
-JNI
-
-CMake
-
-Build Tools:
-
-Gradle
-
-Android Studio
-
-How It Works
-
-App starts and shows live camera preview
-
-User taps Capture
-
-Bitmap is converted to ByteArray
-
-ByteArray is sent to native C++ via JNI
-
-OpenCV performs edge detection
-
-Native code returns processed RGBA frame
-
-App displays the processed image
-
-User taps Retake to restart the preview
-
-Native Image Processing (Summary)
-
-The JNI function processFrame(...) performs:
-
-ByteArray → cv::Mat conversion
-
-Grayscale conversion
-
-Edge detection (Canny/Sobel)
-
-cv::Mat → ByteArray
-
-Sends processed data back to Android
-
-Build & Run Guide
-
-Option A — Run via Android Studio:
-
-Open the project
-
-Connect an Android device
-
-Press Run
-
-Option B — Install Debug APK:
-
-Build → Build APK(s)
-
-Find the APK at:
-app/build/outputs/apk/debug/app-debug.apk
-
-This debug APK is acceptable for assignment submission.
-
-Simplified Project Structure
-
-app/
-src/main/java/com/example/edgeviewer/MainActivity.kt
-src/main/cpp/native-lib.cpp
-src/main/cpp/CMakeLists.txt
-src/main/res/layout/activity_main.xml
-build.gradle.kts
-
-Tested On:
-
-Samsung M33
-
-Android API 24+
-
-Architectures: arm64-v8a, armeabi-v7a
-
-Notes for Reviewer
-
-Demonstrates full native OpenCV integration
-
-Includes camera capture → native processing → display
-
-Retake implementation supports continuous use
-
-Debug build is used for submission (Release not required)
-
-License
-
-This repository is part of a technical assignment submission.
-All code is for demonstration purposes only.
+---
