@@ -121,3 +121,8 @@ All code is for demonstration and evaluation purposes only.
 ![Actual Pic](screenshots/actual-pic.jpeg)
 
 
+### Edge Detected Output
+![Edge Detected](screenshots/edge-detected.jpeg)
+
+
+
