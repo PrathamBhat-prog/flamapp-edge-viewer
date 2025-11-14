@@ -78,6 +78,39 @@ OpenCV `.so` native libraries are bundled inside the application package.
 
 ---
 
+## 📁 Project Structure (Simplified)
+
+This project follows a clean, modular Android + Native (JNI) architecture.  
+Each component is separated by responsibility:
+
+- **MainActivity.kt**  
+  Handles camera preview, image capture, converting Bitmaps to ByteArrays,  
+  and calling the native C++ processing function through JNI.
+
+- **native-lib.cpp**  
+  Contains the core OpenCV edge detection logic.  
+  Converts RGBA data → grayscale → applies Canny/Sobel → returns processed image.
+
+- **CMakeLists.txt**  
+  Configures how native code is built, and links the OpenCV `.so` libraries properly.
+
+- **activity_main.xml**  
+  The UI layout containing `TextureView` (camera preview), `ImageView` (processed output),  
+  and the Capture/Retake buttons.
+
+- **jniLibs / OpenCV native libraries**  
+  Precompiled OpenCV shared libraries that allow native image processing on-device.
+
+This structure clearly separates:
+- UI logic (Kotlin)
+- Camera handling (Kotlin)
+- Heavy image processing (C++)
+- Build rules & native linking (CMake)
+- Prebuilt OpenCV binaries (jniLibs)
+
+---
+
+
 ## 📦 Build & Run Guide
 
 ### ✔ Run via Android Studio
